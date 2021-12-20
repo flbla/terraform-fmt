@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -xe
+rootDir=$(git rev-parse --show-toplevel)
+
+go_fmt() {
+  go fmt ../...
+}
+
+# __MAIN__
+go_fmt
