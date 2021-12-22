@@ -2,7 +2,10 @@ module martijnvdp/terraform-fmt.git
 
 go 1.17
 
-require github.com/hashicorp/terraform-config-inspect v0.0.0-20211115214459-90acf1ca460f
+require (
+	github.com/coryb/sorty v0.0.0-20150713032104-4c034679911c
+	github.com/hashicorp/terraform-config-inspect v0.0.0-20211115214459-90acf1ca460f
+)
 
 require (
 	github.com/agext/levenshtein v1.2.2 // indirect

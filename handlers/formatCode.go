@@ -21,10 +21,5 @@ func FormatCode(dir string) {
 		log.Println(err)
 	}
 
-	for _, v := range module.Variables {
-		fmt.Println(v.Name)
-		fmt.Println(v.Description)
-		fmt.Println(v.Pos.Filename)
-		fmt.Println(v.Pos.Line)
-	}
+	_ = sortVariables(module.Variables)
 }
