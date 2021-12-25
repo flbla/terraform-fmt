@@ -12,9 +12,9 @@ variable "avar" {
 
 variable "bvar" {
   type        = string
-  description = "B var"
   default     = "B"
   sensitive = true
+  description = "B var"
 }
 
 variable "evar" {

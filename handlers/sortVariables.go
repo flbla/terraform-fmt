@@ -27,9 +27,9 @@ func sortVariables(variables map[string]*tfconfig.Variable) (err error) {
 		}
 		sort.Strings(names[k])
 	}
-	file := hclwrite.NewFile()
 
 	for k, _ := range files {
+		file := hclwrite.NewFile()
 		f, err := os.Create(k + ".sorted")
 
 		if err != nil {
