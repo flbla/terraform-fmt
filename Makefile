@@ -52,7 +52,7 @@ fix-typos:
 	codespell -S vendor,funcs,.terraform --ignore-words .codespellignore -f -w -i1
 
 .PHONY: pre-pr
-pre-pr: quality typos
+pre-pr: quality typos test
 
 .PHONY: bench
 bench:
