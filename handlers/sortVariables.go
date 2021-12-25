@@ -42,8 +42,8 @@ func sortVariables(variables map[string]*tfconfig.Variable) (err error) {
 			b.Body().SetAttributeValue("description", cty.StringVal(varMap[name].Description))
 			b.Body().SetAttributeValue("default", cty.StringVal(fmt.Sprint(varMap[name].Default)))
 			b.Body().SetAttributeValue("sensitive", cty.BoolVal(varMap[name].Sensitive))
-			b.Body().AppendNewline()
 			file.Body().AppendBlock(b)
+			file.Body().AppendNewline()
 		}
 		f.Write(file.Bytes())
 	}
