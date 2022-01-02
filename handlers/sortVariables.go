@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
@@ -12,56 +13,60 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func sortVariables(variables map[string]*tfconfig.Variable) (err error) {
-	files := make(map[string][]*tfconfig.Variable)
-	names := make(map[string][]string)
+type variableFile struct {
+	file     string
+	variable []*tfconfig.Variable
+}
+
+func newVariableFile(file string, variable []*tfconfig.Variable) *variableFile {
+	return &variableFile{
+		file:     file,
+		variable: variable,
+	}
+}
+
+func (f *variableFile) sortVariables() (err error) {
+	var names []string
 	varMap := make(map[string]*tfconfig.Variable)
 
-	for _, v := range variables {
-		files[v.Pos.Filename] = append(files[v.Pos.Filename], v)
+	for _, variable := range f.variable {
+		names = append(names, variable.Name)
+		varMap[variable.Name] = variable
+	}
+	sort.Strings(names)
+
+	file := hclwrite.NewFile()
+	outputFile, err := os.Create(f.file + ".sorted")
+
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	for k, _ := range files {
-		for _, variable := range files[k] {
-			names[k] = append(names[k], variable.Name)
-			varMap[variable.Name] = variable
-		}
-		sort.Strings(names[k])
-	}
-
-	for k, _ := range files {
-		file := hclwrite.NewFile()
-		f, err := os.Create(k + ".sorted")
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		defer f.Close()
-		for _, name := range names[k] {
-			b := hclwrite.NewBlock("variable", []string{varMap[name].Name})
-			b.Body().AppendUnstructuredTokens(hclwrite.Tokens{{
+	defer outputFile.Close()
+	for _, name := range names {
+		b := hclwrite.NewBlock("variable", []string{varMap[name].Name})
+		b.Body().AppendUnstructuredTokens(hclwrite.Tokens{{
+			Type:  hclsyntax.TokenNil,
+			Bytes: []byte(fmt.Sprintf("type = %s", varMap[name].Type)),
+		}})
+		b.Body().AppendNewline()
+		b.Body().SetAttributeValue("description", cty.StringVal(varMap[name].Description))
+		if strings.HasPrefix(varMap[name].Type, "object") {
+			//v, _ := json.Marshal(varMap[name].Default)
+			b.Body().SetAttributeRaw("default", hclwrite.Tokens{{
 				Type:  hclsyntax.TokenNil,
-				Bytes: []byte(fmt.Sprintf("type = %s", varMap[name].Type)),
+				Bytes: []byte(fmt.Sprint(varMap[name].Default)),
 			}})
-			b.Body().AppendNewline()
-			b.Body().SetAttributeValue("description", cty.StringVal(varMap[name].Description))
-			if varMap[name].Type == "Object" {
-				b.Body().AppendUnstructuredTokens(hclwrite.Tokens{{
-					Type:  hclsyntax.TokenNil,
-					Bytes: []byte(fmt.Sprint(varMap[name].Default)),
-				}})
-				b.Body().AppendNewline()
 
-			} else {
-				b.Body().SetAttributeValue("default", cty.StringVal(fmt.Sprint(varMap[name].Default)))
-			}
-			b.Body().SetAttributeValue("sensitive", cty.BoolVal(varMap[name].Sensitive))
-			file.Body().AppendBlock(b)
-			file.Body().AppendNewline()
+			b.Body().AppendNewline()
+		} else {
+			b.Body().SetAttributeValue("default", cty.StringVal(fmt.Sprint(varMap[name].Default)))
 		}
-		f.Write(file.Bytes())
+		b.Body().SetAttributeValue("sensitive", cty.BoolVal(varMap[name].Sensitive))
+		file.Body().AppendBlock(b)
+		file.Body().AppendNewline()
 	}
+	outputFile.Write(file.Bytes())
 
 	return err
 }
