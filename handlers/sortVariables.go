@@ -1,16 +1,17 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"sort"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/zclconf/go-cty/cty"
+	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
 type variableFile struct {
@@ -25,16 +26,38 @@ func newVariableFile(file string, variable []*tfconfig.Variable) *variableFile {
 	}
 }
 
+func getVarDefaultValue(defaultValueInput interface{}) (defaultValue cty.Value, err error) {
+	if defaultValueInput == nil {
+		return defaultValue, err
+	}
+
+	defaultValueJson, err := json.Marshal(defaultValueInput)
+	if err != nil {
+		return defaultValue, err
+	}
+
+	implType, err := ctyjson.ImpliedType(defaultValueJson)
+	if err != nil {
+		return defaultValue, err
+	}
+
+	defaultValue, err = ctyjson.Unmarshal(defaultValueJson, implType)
+	if err != nil {
+		return defaultValue, err
+	}
+	return defaultValue, err
+}
+
 func (f *variableFile) sortVariables() (err error) {
 	var names []string
 	varMap := make(map[string]*tfconfig.Variable)
 
 	for _, variable := range f.variable {
 		names = append(names, variable.Name)
+		fmt.Println(variable.Default)
 		varMap[variable.Name] = variable
 	}
 	sort.Strings(names)
-
 	file := hclwrite.NewFile()
 	outputFile, err := os.Create(f.file + ".sorted")
 
@@ -51,17 +74,11 @@ func (f *variableFile) sortVariables() (err error) {
 		}})
 		b.Body().AppendNewline()
 		b.Body().SetAttributeValue("description", cty.StringVal(varMap[name].Description))
-		if strings.HasPrefix(varMap[name].Type, "object") {
-			//v, _ := json.Marshal(varMap[name].Default)
-			b.Body().SetAttributeRaw("default", hclwrite.Tokens{{
-				Type:  hclsyntax.TokenNil,
-				Bytes: []byte(fmt.Sprint(varMap[name].Default)),
-			}})
-
-			b.Body().AppendNewline()
-		} else {
-			b.Body().SetAttributeValue("default", cty.StringVal(fmt.Sprint(varMap[name].Default)))
+		defaultValue, err := getVarDefaultValue(varMap[name].Default)
+		if err != nil {
+			return err
 		}
+		b.Body().SetAttributeValue("default", defaultValue)
 		b.Body().SetAttributeValue("sensitive", cty.BoolVal(varMap[name].Sensitive))
 		file.Body().AppendBlock(b)
 		file.Body().AppendNewline()
