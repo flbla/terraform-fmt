@@ -16,3 +16,5 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	golang.org/x/text v0.3.5 // indirect
 )
+
+replace github.com/hashicorp/terraform-config-inspect => github.com/martijnvdp/terraform-config-inspect v0.0.0-20220102212128-153b027595a8
