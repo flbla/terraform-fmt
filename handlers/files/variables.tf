@@ -10,6 +10,11 @@ variable "avar" {
   default     = "a"
 }
 
+variable "xvar" {
+  type        = string
+  description = "x var"
+}
+
 variable "bvar" {
   type        = string
   default     = "B"
