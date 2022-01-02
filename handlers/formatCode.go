@@ -9,17 +9,27 @@ import (
 )
 
 func FormatCode(dir string) {
+	varFiles := make(map[string][]*tfconfig.Variable)
+	var vFiles []*variableFile
 	path, err := os.Getwd()
 
 	if err != nil {
 		log.Println(err)
 	}
 	fmt.Println(path)
-	module, err := tfconfig.LoadModule(dir)
-
-	if err != nil {
+	module, err2 := tfconfig.LoadModule(dir)
+	if err2 != nil {
 		log.Println(err)
 	}
 
-	_ = sortVariables(module.Variables)
+	for _, v := range module.Variables {
+		varFiles[v.Pos.Filename] = append(varFiles[v.Pos.Filename], v)
+	}
+	for file := range varFiles {
+		vFiles = append(vFiles, newVariableFile(file, varFiles[file]))
+	}
+
+	for _, f := range vFiles {
+		f.sortVariables()
+	}
 }
