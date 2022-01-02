@@ -26,12 +26,12 @@ func newVariableFile(file string, variable []*tfconfig.Variable) *variableFile {
 	}
 }
 
-func getVarDefaultValue(defaultValueInput interface{}) (defaultValue cty.Value, err error) {
-	if defaultValueInput == nil {
+func getCtyVal(inputValue interface{}) (defaultValue cty.Value, err error) {
+	if inputValue == nil {
 		return defaultValue, err
 	}
 
-	defaultValueJson, err := json.Marshal(defaultValueInput)
+	defaultValueJson, err := json.Marshal(inputValue)
 	if err != nil {
 		return defaultValue, err
 	}
@@ -74,11 +74,19 @@ func (f *variableFile) sortVariables() (err error) {
 		}})
 		b.Body().AppendNewline()
 		b.Body().SetAttributeValue("description", cty.StringVal(varMap[name].Description))
-		defaultValue, err := getVarDefaultValue(varMap[name].Default)
+		defaultValue, err := getCtyVal(varMap[name].Default)
 		if err != nil {
 			return err
 		}
 		b.Body().SetAttributeValue("default", defaultValue)
+		for _, v := range varMap[name].Validations {
+			val, err := getCtyVal(v)
+
+			if err != nil {
+				return err
+			}
+			b.Body().SetAttributeValue("validation", val)
+		}
 		b.Body().SetAttributeValue("sensitive", cty.BoolVal(varMap[name].Sensitive))
 		file.Body().AppendBlock(b)
 		file.Body().AppendNewline()
