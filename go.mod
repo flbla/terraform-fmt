@@ -1,4 +1,4 @@
-module martijnvdp/terraform-fmt.git
+module github.com/flbla/terraform-fmt
 
 go 1.17
 
