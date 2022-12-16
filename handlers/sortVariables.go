@@ -79,14 +79,13 @@ func (f *variableFile) sortVariables() (err error) {
 			return err
 		}
 		b.Body().SetAttributeValue("default", defaultValue)
-		for _, v := range varMap[name].Validations {
-			val, err := getCtyVal(v)
-
-			if err != nil {
-				return err
-			}
-			b.Body().SetAttributeValue("validation", val)
-		}
+		// for _, v := range varMap[name].Validations {
+		// 	val, err := getCtyVal(v)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	b.Body().SetAttributeValue("validation", val)
+		// }
 		b.Body().SetAttributeValue("sensitive", cty.BoolVal(varMap[name].Sensitive))
 		file.Body().AppendBlock(b)
 		file.Body().AppendNewline()
